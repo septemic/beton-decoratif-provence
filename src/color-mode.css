@@ -57,7 +57,7 @@
 }
 :root body { background: var(--surface); color: var(--ink); }
 .material-ribbon { background: var(--surface); }
-.service-card, .material-card, .project-card, .budget-card, .solution-extra, #project-form, dialog {
+.service-card, .material-card, .project-card, .budget-card, #project-form, dialog {
   background: var(--card);
   border-color: var(--line);
 }
@@ -66,7 +66,7 @@
 .related-card:hover { background: var(--paper); border-color: var(--gold-ink); }
 .eyebrow, .material-ribbon span:nth-child(even), .principles span,
 .service-content .eyebrow, .budget-card .eyebrow, .contact-note > span,
-.service-detail-link, .solution-extra a, .google-profile, .faq-list p a,
+.service-detail-link, .google-profile, .faq-list p a,
 .faq-list summary > span, .related-card > span:last-child,
 form label > span[aria-hidden] { color: var(--gold-ink); }
 .service-detail-link:hover { color: var(--ink); }

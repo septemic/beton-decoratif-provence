@@ -5,18 +5,35 @@ const executablePath =
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
   (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
 
+// 4173 reste le port par défaut ; PLAYWRIGHT_PORT permet de lancer la suite
+// ailleurs quand une prévisualisation occupe déjà le port.
+const port = process.env.PLAYWRIGHT_PORT || "4173";
+const origin = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: "./tests",
   testMatch: process.env.PAGES_TEST
-    ? ["**/pages.spec.js", "**/scroll.spec.js", "**/seo.spec.js", "**/theme.spec.js"]
-    : ["**/site.spec.js", "**/scroll.spec.js", "**/seo.spec.js", "**/theme.spec.js"],
+    ? [
+        "**/pages.spec.js",
+        "**/project-mapping.spec.js",
+        "**/scroll.spec.js",
+        "**/seo.spec.js",
+        "**/theme.spec.js",
+      ]
+    : [
+        "**/site.spec.js",
+        "**/project-mapping.spec.js",
+        "**/scroll.spec.js",
+        "**/seo.spec.js",
+        "**/theme.spec.js",
+      ],
   fullyParallel: true,
   workers: 2,
   reporter: "list",
   use: {
     baseURL: process.env.PAGES_TEST
-      ? "http://127.0.0.1:4173/beton-decoratif-provence/"
-      : "http://127.0.0.1:4173",
+      ? `${origin}/beton-decoratif-provence/`
+      : origin,
     browserName: "chromium",
     launchOptions: { executablePath },
     trace: "retain-on-failure",
@@ -34,11 +51,11 @@ export default defineConfig({
   ],
   webServer: {
     command: process.env.PAGES_TEST
-      ? "npm run preview -- --mode pages --port 4173 --strictPort"
-      : "npm run preview -- --port 4173 --strictPort",
+      ? `npm run preview -- --mode pages --port ${port} --strictPort`
+      : `npm run preview -- --port ${port} --strictPort`,
     url: process.env.PAGES_TEST
-      ? "http://127.0.0.1:4173/beton-decoratif-provence/"
-      : "http://127.0.0.1:4173",
+      ? `${origin}/beton-decoratif-provence/`
+      : origin,
     reuseExistingServer: false,
   },
 });

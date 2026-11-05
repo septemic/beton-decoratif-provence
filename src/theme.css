@@ -461,6 +461,11 @@ textarea::placeholder {
   font-size: 0.72rem;
   margin-top: -14px;
 }
+.project-context {
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
 .consent {
   font-size: 0.74rem;
   font-weight: 400;

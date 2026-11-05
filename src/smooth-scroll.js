@@ -1,5 +1,15 @@
-const DURATION = 1150;
+const MIN_DURATION = 280;
+const MAX_DURATION = 650;
+const DURATION_BASE = 180;
+const DURATION_PER_PIXEL = 0.6;
 const LINE_HEIGHT = 100 / 6;
+
+// One easing shape for every step, but a step's length now sets its duration:
+// short nudges settle fast, long jumps keep the same curve over a longer span.
+function scrollDuration(distance) {
+  const raw = DURATION_BASE + Math.abs(distance) * DURATION_PER_PIXEL;
+  return Math.round(Math.min(MAX_DURATION, Math.max(MIN_DURATION, raw)));
+}
 
 // Match Urbiscor's wheel easing while moving the real document scroll position.
 // Touch, anchor navigation, focus and keyboard scrolling remain browser-native.
@@ -15,6 +25,7 @@ export function initSmoothScroll() {
   let target = 0;
   let written = 0;
   let started = 0;
+  let span = MIN_DURATION;
 
   function stop() {
     cancelAnimationFrame(frame);
@@ -30,7 +41,7 @@ export function initSmoothScroll() {
       stop();
       return;
     }
-    const progress = Math.min(1, Math.max(0, (time - started) / DURATION));
+    const progress = Math.min(1, Math.max(0, (time - started) / span));
     const eased = progress === 1 ? 1 : Math.min(1, 1.001 - 2 ** (-10 * progress));
     window.scrollTo({ top: from + (target - from) * eased, behavior: "instant" });
     written = window.scrollY;
@@ -92,6 +103,9 @@ export function initSmoothScroll() {
     target = next;
     written = from;
     started = performance.now();
+    // A retarget keeps `from` at the live scroll position, so the step's own
+    // distance (and therefore its duration) is recomputed on every gesture.
+    span = scrollDuration(target - from);
     // Cancel a browser anchor animation when a new wheel gesture takes priority.
     window.scrollTo({ top: from, behavior: "instant" });
     if (!frame) frame = requestAnimationFrame(animate);

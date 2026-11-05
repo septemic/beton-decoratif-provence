@@ -115,7 +115,10 @@ test("navigation, service selection and frequently asked questions work", async 
     await expect(quickActions).not.toBeVisible();
   }
   await page.getByRole("link", { name: /Aménager ma piscine/ }).click();
-  await expect(page.locator("#project-type")).toHaveValue("Plage de piscine");
+  await expect(page.locator("#project-type")).toHaveValue("Béton imprimé");
+  await expect(page.locator("#project-amenagement")).toHaveValue(
+    "Plage de piscine",
+  );
   await page
     .getByText("Peut-on réaliser une allée carrossable ?", { exact: false })
     .click();
@@ -133,7 +136,7 @@ async function fillRequest(page) {
   await page.getByLabel("Votre nom").fill("Camille Test");
   await page.getByLabel("Votre e-mail").fill("camille@example.test");
   await page.getByLabel("Votre ville").fill("Aix-en-Provence");
-  await page.getByLabel("Type de projet").selectOption("Terrasse ou cour");
+  await page.getByLabel("Type de projet").selectOption("Béton imprimé");
   await page
     .getByLabel("Parlez-nous de votre projet")
     .fill("Un projet de béton imprimé pour une terrasse de 35 mètres carrés.");
@@ -162,7 +165,8 @@ test("a valid request sends the Netlify fields and reaches the confirmation page
   );
   expect(submitted.get("form-name")).toBe("devis");
   expect(submitted.get("email")).toBe("camille@example.test");
-  expect(submitted.get("projet")).toBe("Terrasse ou cour");
+  expect(submitted.get("projet")).toBe("Béton imprimé");
+  expect(submitted.get("amenagement")).toBe("");
   expect(submitted.get("consentement")).toBe("oui");
   expect(submitted.get("bot-field")).toBe("");
   await page.getByRole("link", { name: "Revenir au site" }).click();
@@ -230,6 +234,7 @@ test("the layout fits a narrow screen with reduced motion enabled", async ({
 test("the optimized page remains styled and usable without JavaScript", async ({ browser }, testInfo) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
+    baseURL: testInfo.project.use.baseURL,
     viewport: testInfo.project.use.viewport,
   });
   const page = await context.newPage();
@@ -237,7 +242,7 @@ test("the optimized page remains styled and usable without JavaScript", async ({
   page.on("response", response => {
     if (response.status() >= 400) failures.push(response.url());
   });
-  await page.goto("http://127.0.0.1:4173/");
+  await page.goto("/");
   await page.evaluate(() => document.fonts.ready);
   await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-family", /Manrope/);
   await expect(page.locator(".hero-art img")).toBeVisible();

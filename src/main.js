@@ -109,9 +109,35 @@ document.querySelector("#choose-material").addEventListener("click", () => {
       : "smooth",
   });
 });
+const projectSelect = document.querySelector("#project-type");
+const amenagementField = document.querySelector("#project-amenagement");
+const projectContext = document.querySelector("#project-context");
+
+// Le formulaire distingue le type de projet (finition) de l'aménagement
+// (terrasse, allée, plage de piscine). Les deux restent utiles au devis.
+function selectProject(finish, amenagement = "", { onlyIfEmpty = false } = {}) {
+  if (!projectSelect) return;
+  const option = [...projectSelect.options].find(
+    (item) => item.textContent.trim() === finish,
+  );
+  if (!option) return;
+  // Un clic sur une carte est un choix explicite du visiteur : il remplace
+  // toujours la finition affichée. Le paramètre ?projet= ne sert que de valeur
+  // par défaut, et ne doit donc pas écraser un choix déjà présent.
+  if (onlyIfEmpty && projectSelect.value) return;
+  projectSelect.value = option.value;
+  if (amenagementField) amenagementField.value = amenagement;
+  if (projectContext) {
+    projectContext.textContent = amenagement
+      ? `Votre projet : ${amenagement}`
+      : "";
+    projectContext.hidden = !amenagement;
+  }
+}
+
 document.querySelectorAll("[data-service]").forEach((link) => {
   link.addEventListener("click", () => {
-    document.querySelector("#project-type").value = link.dataset.service;
+    selectProject(link.dataset.service, link.dataset.amenagement || "");
   });
 });
 
@@ -123,9 +149,18 @@ document.querySelectorAll('a[href="#confidentialite"]').forEach((link) => {
 document.querySelector("#year").textContent = String(new Date().getFullYear());
 
 const form = document.querySelector("#project-form");
-const projectTypes = { terrasse: "Terrasse ou cour", allee: "Allée ou accès", piscine: "Plage de piscine", desactive: "Béton désactivé" };
-const project = projectTypes[new URLSearchParams(window.location.search).get("projet")];
-if (project) document.querySelector("#project-type").value ||= project;
+const projectTypes = {
+  terrasse: { finish: "Béton imprimé", amenagement: "Terrasse" },
+  allee: { finish: "Béton imprimé", amenagement: "Allée" },
+  piscine: { finish: "Béton imprimé", amenagement: "Plage de piscine" },
+  desactive: { finish: "Béton désactivé", amenagement: "" },
+};
+const requestedProject =
+  projectTypes[new URLSearchParams(window.location.search).get("projet")];
+if (requestedProject)
+  selectProject(requestedProject.finish, requestedProject.amenagement, {
+    onlyIfEmpty: true,
+  });
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (form.dataset.contactMode === "email") {
@@ -140,6 +175,9 @@ form.addEventListener("submit", async (event) => {
       `Téléphone : ${values.get("telephone") || "Non précisé"}`,
       `Surface approximative (m²) : ${values.get("surface") || "Non précisée"}`,
       `Type de projet : ${values.get("projet")}`,
+      ...(values.get("amenagement")
+        ? [`Type d’aménagement : ${values.get("amenagement")}`]
+        : []),
       `Nuance : ${values.get("nuance") || "À définir"}`,
       "",
       values.get("message"),

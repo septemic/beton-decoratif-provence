@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 const origin = "https://betondecoratifprovence.fr";
 const services = [
-  ["terrasse-beton-imprime", "Terrasse en béton imprimé", "Terrasse ou cour"],
-  ["allee-beton-imprime", "Allée en béton imprimé", "Allée ou accès"],
-  ["plage-piscine-beton-imprime", "Plage de piscine en béton imprimé", "Plage de piscine"],
-  ["beton-desactive", "Béton désactivé", "Béton désactivé"],
+  ["terrasse-beton-imprime", "Terrasse en béton imprimé", "Béton imprimé", "Terrasse"],
+  ["allee-beton-imprime", "Allée en béton imprimé", "Béton imprimé", "Allée"],
+  ["plage-piscine-beton-imprime", "Plage de piscine en béton imprimé", "Béton imprimé", "Plage de piscine"],
+  ["beton-desactive", "Béton désactivé", "Béton désactivé", ""],
 ];
 const base = process.env.PAGES_TEST ? "/beton-decoratif-provence/" : "/";
 
@@ -67,15 +67,17 @@ test("service navigation stays accessible on desktop and mobile", async ({ page 
 });
 
 test("each service quotation action selects the correct project on the home form", async ({ page }) => {
-  for (const [slug, , project] of services) {
+  for (const [slug, , project, amenagement] of services) {
     await page.goto(`${base}${slug}/`);
     await page.getByRole("link", { name: /Demander mon devis gratuit/ }).click();
     await expect(page).toHaveURL(/\?projet=[a-z]+#contact$/);
     await expect(page.locator("#project-type")).toHaveValue(project);
+    await expect(page.locator("#project-amenagement")).toHaveValue(amenagement);
     await expect(page.getByLabel("Votre nom")).toBeInViewport();
   }
   await page.goto(`${base}?projet=inconnu#contact`);
   await expect(page.locator("#project-type")).toHaveValue("");
+  await expect(page.locator("#project-amenagement")).toHaveValue("");
 });
 
 test("optional telephone and surface are preserved in the quote flow on each host", async ({ page }) => {
@@ -104,15 +106,16 @@ test("optional telephone and surface are preserved in the quote flow on each hos
     expect(submitted.get("telephone")).toBe("06 00 00 00 00");
     expect(submitted.get("surface")).toBe("35");
     expect(submitted.get("message")).toBe("Terrasse 35m²");
-    expect(submitted.get("projet")).toBe("Terrasse ou cour");
+    expect(submitted.get("projet")).toBe("Béton imprimé");
+    expect(submitted.get("amenagement")).toBe("Terrasse");
   }
 });
 
 test("service content, FAQs and cross-page navigation work without JavaScript", async ({ browser }, testInfo) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, viewport: testInfo.project.use.viewport });
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL: testInfo.project.use.baseURL, viewport: testInfo.project.use.viewport });
   const page = await context.newPage();
   try {
-    await page.goto(`http://127.0.0.1:4173${base}terrasse-beton-imprime/`);
+    await page.goto(`${base}terrasse-beton-imprime/`);
     await expect(page.locator("h1")).toContainText("Terrasse en béton imprimé");
     const words = (await page.locator(".article-copy").innerText()).trim().split(/\s+/).length;
     expect(words).toBeGreaterThan(350);

@@ -102,6 +102,9 @@ test("textarea and modal scrolling stay native and do not move the background", 
   await probe(page);
   const message = page.getByLabel("Parlez-nous de votre projet");
   await message.fill(Array(80).fill("Une ligne du projet.").join("\n"));
+  // fill() leaves the caret at the end, so the textarea is already scrolled:
+  // reset it so the poll below really waits for the wheel instead of passing at once.
+  await message.evaluate(element => { element.scrollTop = 0; });
   await message.hover();
   const before = await page.evaluate(() => scrollY);
   await page.mouse.wheel(0, 350);
@@ -182,4 +185,62 @@ test("touch scrolling and document boundaries remain usable", async ({ page }, t
   await near(page, limit);
   await page.mouse.wheel(0, -1000000);
   await near(page, 0);
+});
+
+// Timing instrument: each animation frame records its timestamp and the real
+// scroll position, so a step's settle time can be read from the clock instead
+// of from how many frames the browser happened to run.
+async function timing(page) {
+  await page.addInitScript(() => {
+    const request = window.requestAnimationFrame.bind(window);
+    window.__timing = { frames: [], start: null };
+    window.requestAnimationFrame = callback => request(time => {
+      callback(time);
+      window.__timing.frames.push({ time, position: window.scrollY });
+    });
+    window.addEventListener("wheel", () => {
+      if (window.__timing.start === null) window.__timing.start = performance.now();
+    }, { capture: true, passive: true });
+  });
+  await page.goto("./");
+  await page.evaluate(() => document.fonts.ready);
+  const viewport = page.viewportSize();
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+}
+
+async function settleTime(page, delta) {
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    window.__timing.frames.length = 0;
+    window.__timing.start = null;
+  });
+  // Let the reset land before the wheel event, so the step starts from rest.
+  await page.waitForTimeout(250);
+  await page.mouse.wheel(0, delta);
+  await expect.poll(() => page.evaluate(() => Math.round(scrollY)), { timeout: 5000 })
+    .toBeGreaterThanOrEqual(delta - 1);
+  return page.evaluate(() => {
+    const { frames, start } = window.__timing;
+    const settled = frames[frames.length - 1];
+    const arrived = frames.find(frame => settled.position - frame.position <= 1);
+    return arrived && start !== null ? Math.round(arrived.time - start) : null;
+  });
+}
+
+test("wheel settle time follows the step distance, not a fixed duration", async ({ page }) => {
+  await timing(page);
+  const fine = await page.evaluate(() => matchMedia("(any-pointer: fine)").matches);
+  test.skip(!fine, "wheel smoothing only runs on fine pointers");
+
+  const short = await settleTime(page, 100);
+  const long = await settleTime(page, 1200);
+
+  expect(short).not.toBeNull();
+  expect(long).not.toBeNull();
+  // CI tolerances: the measured values are roughly 200ms and 450ms.
+  expect(short).toBeLessThanOrEqual(600);
+  expect(long).toBeLessThanOrEqual(900);
+  // The long step must stay slower than the short one: equal times would mean
+  // the duration is constant again.
+  expect(long).toBeGreaterThan(short);
 });

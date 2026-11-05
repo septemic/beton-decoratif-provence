@@ -141,10 +141,10 @@ test("motion preferences and JavaScript-free system theme remain usable", async 
   await toggle(page).click();
   await expect(page.locator(".theme-icon-sun")).toHaveCSS("transition-duration", "0s");
   expect(await toggle(page).evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
-  const context = await browser.newContext({ javaScriptEnabled: false, colorScheme: "dark", viewport: testInfo.project.use.viewport });
+  const context = await browser.newContext({ javaScriptEnabled: false, colorScheme: "dark", baseURL: testInfo.project.use.baseURL, viewport: testInfo.project.use.viewport });
   const nativePage = await context.newPage();
   try {
-    await nativePage.goto("http://127.0.0.1:4173" + base + "terrasse-beton-imprime/");
+    await nativePage.goto(base + "terrasse-beton-imprime/");
     await expect(nativePage.locator("body")).toHaveCSS("background-color", "rgb(22, 25, 29)");
     await expect(nativePage.locator(".theme-toggle")).not.toBeVisible();
     await expect(nativePage.locator("h1")).toHaveCSS("font-family", /Manrope/);

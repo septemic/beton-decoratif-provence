@@ -28,7 +28,7 @@ test("a quote prepares an email with the selected finish without claiming delive
   await page.getByLabel("Votre nom").fill("Camille Test");
   await page.getByLabel("Votre e-mail").fill("camille@example.test");
   await page.getByLabel("Votre ville").fill("Aix-en-Provence");
-  await page.getByLabel("Type de projet").selectOption("Terrasse ou cour");
+  await page.getByLabel("Type de projet").selectOption("Béton imprimé");
   await page.getByLabel("Parlez-nous de votre projet").fill("Une rénovation de la terrasse de 35 mètres carrés.");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Préparer mon e-mail" }).click();
@@ -37,7 +37,7 @@ test("a quote prepares an email with the selected finish without claiming delive
   const href = await draft.getAttribute("href");
   const url = new URL(href);
   expect(url.pathname).toBe("contact@betondecoratifprovence.fr");
-  expect(url.searchParams.get("subject")).toContain("Terrasse ou cour");
+  expect(url.searchParams.get("subject")).toContain("Béton imprimé");
   expect(url.searchParams.get("body")).toContain("camille@example.test");
   expect(url.searchParams.get("body")).toContain("Nuance : Sable");
   expect(url.searchParams.get("body")).toContain("terrasse de 35");
